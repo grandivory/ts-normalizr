@@ -1,0 +1,9 @@
+{
+  "name": "ts-normalizr",
+  "version": "1.0.0",
+  "description": "A typescript-first port of Paul Armstrong's normalizr library for converting nested object structures to a normalized structure.",
+  "main": "index.js",
+  "repository": "github.com/grandivory/ts-normalizr",
+  "author": "Matthew Butt",
+  "license": "MIT"
+}

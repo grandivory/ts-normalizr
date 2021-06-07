@@ -5,4 +5,4 @@ export type NormalizationOutput<ResultType, Entities> = {
 
 export type ValidKey = string | number | symbol;
 
-export type StringLiteral<T extends string> = string extends T ? never : T;
+export type ValueOf<T> = T[keyof T];

@@ -10,7 +10,7 @@ describe('Entity normalization', () => {
     const entityBuilder = entity<Basic>().id('id').name('items');
     const schema = build(entityBuilder);
     expect(schema.normalize({ "id": 1 })).toEqual({
-      "result": 1,
+      "result": '1',
       "entities": {
         "items": { "1": { "id": 1 } }
       }
@@ -45,7 +45,7 @@ describe('Entity normalization', () => {
     };
 
     const output: {
-      result: number,
+      result: string,
       entities: {
         posts: Record<string, Omit<Post, 'author'>>,
         users: Record<string, User>
@@ -53,7 +53,7 @@ describe('Entity normalization', () => {
     } = postSchema.normalize(testPost);
 
     expect(output).toEqual({
-      "result": 1,
+      "result": '1',
       "entities": {
         "posts": {
           "1": { "id": 1, "title": 'Test Post', "author": 'Jack'}
@@ -140,7 +140,7 @@ describe('Entity normalization', () => {
       "result": 'Jack',
       "entities": {
         "users": {
-          'Jack': {"name": 'Jack', "posts": [1, 2]},
+          'Jack': {"name": 'Jack', "posts": ['1', '2']},
         },
         "posts": {
           "1": {"id": 1, "title": 'Test Post 1'},
@@ -151,9 +151,130 @@ describe('Entity normalization', () => {
   });
 
   describe('idAttribute', () => {
-    it('can use a custom idAttribute', () => {});
-    it('can normalize entity IDs based on their object key', () => {});
-    it('can build the entity\'s ID from the parent object', () => {});
+    interface Test {
+      foo: string
+      bar: string
+    }
+    it('can compute an id', () => {
+      const testBuilder = entity<Test>()
+        .name('tests')
+        .computeId((input: Test) => input.foo + input.bar);
+      const testSchema = build(testBuilder);
+
+      const test = {
+        "foo": 'baz',
+        "bar": 'qux'
+      };
+
+      expect(testSchema.normalize(test)).toEqual({
+        "result": 'bazqux',
+        "entities": {
+          "tests": {
+            'bazqux': { "foo": 'baz', "bar": 'qux' }
+          }
+        }
+      });
+    });
+
+    it('can build the entity\'s ID from the parent object', () => {
+      interface TestHolder {
+        id: number
+        a: Test
+        b: Test
+      }
+
+      const testBuilder = entity<Test>()
+        .name('tests')
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        .computeId((input: Test, parent: any) => ['string', 'number'].includes(typeof parent.id) ?
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            `${parent.id as string}${input.foo}` :
+            input.foo
+        );
+      const testSchema = build(testBuilder);
+
+      const holderBuilder = entity<TestHolder>()
+        .name('holders')
+        .id('id')
+        .prop('a', 'tests')
+        .prop('b', 'tests')
+        .define('tests', testSchema);
+      const holderSchema = build(holderBuilder);
+
+      const test = {
+        "foo": 'baz',
+        "bar": 'qux'
+      };
+      const holder = {
+        "id": 42,
+        "a": test,
+        "b": test
+      };
+
+      expect(holderSchema.normalize(holder)).toEqual({
+        "result": '42',
+        "entities": {
+          'holders': {
+            '42': {
+              "id": 42,
+              "a": '42baz',
+              "b": '42baz'
+            }
+          },
+          'tests': {
+            '42baz': { "foo": 'baz', "bar": 'qux' },
+          }
+        }
+      });
+    });
+
+    it('can normalize entity IDs based on their object key', () => {
+      interface TestHolder {
+        id: number
+        a: Test
+        b: Test
+      }
+
+      const testBuilder = entity<Test>()
+        .name('tests')
+        .computeId((input: Test, _parent: any, key: string | undefined) => key ? key + input.foo : input.foo);
+      const testSchema = build(testBuilder);
+
+      const holderBuilder = entity<TestHolder>()
+        .name('holders')
+        .id('id')
+        .prop('a', 'tests')
+        .prop('b', 'tests')
+        .define('tests', testSchema);
+      const holderSchema = build(holderBuilder);
+
+      const test = {
+        "foo": 'baz',
+        "bar": 'qux'
+      };
+      const holder = {
+        "id": 42,
+        "a": test,
+        "b": test
+      };
+
+      expect(holderSchema.normalize(holder)).toEqual({
+        "result": '42',
+        "entities": {
+          'holders': {
+            '42': {
+              "id": 42,
+              "a": 'abaz',
+              "b": 'bbaz'
+            }
+          },
+          'tests': {
+            'abaz': { "foo": 'baz', "bar": 'qux' },
+            'bbaz': { "foo": 'baz', "bar": 'qux' }
+          }
+        }
+      });
+    });
   });
   describe('mergeStrategy', () => {
     it('defaults to plain object merging', () => {});
@@ -184,11 +305,16 @@ describe('Entity Builder', () => {
   }
 
   it('can set an ID prop that exists on its entity type', () => {
-    const idEntity: {idProp: "id"} = entity<Entity>().id('id');
-    const indexEntity: {idProp: "index"} = entity<Entity>().id('index');
+    const idEntity = entity<Entity>().id('id');
+    const indexEntity = entity<Entity>().id('index');
 
-    expect(idEntity.idProp).toBe('id');
-    expect(indexEntity.idProp).toBe('index');
+    const testEntity = {
+      "id": 'foo',
+      "index": 42
+    };
+
+    expect(idEntity.idFunction(testEntity, null, undefined)).toBe('foo');
+    expect(indexEntity.idFunction(testEntity, null, undefined)).toBe('42');
   });
 
   it('can set any name for the entity', () => {
@@ -209,10 +335,15 @@ describe('Entity Builder', () => {
     const nameFirst = entity<Entity>().name('foo').id('id');
     const idFirst = entity<Entity>().id('index').name('bar');
 
-    expect(nameFirst.idProp).toBe('id');
+    const testEntity = {
+      "id": 'foo',
+      "index": 42
+    };
+
+    expect(nameFirst.idFunction(testEntity, null, undefined)).toBe('foo');
     expect(nameFirst.nameProp).toBe('foo');
 
-    expect(idFirst.idProp).toBe('index');
+    expect(idFirst.idFunction(testEntity, null, undefined)).toBe('42');
     expect(idFirst.nameProp).toBe('bar');
   });
 

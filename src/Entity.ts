@@ -1,6 +1,6 @@
-import { mergeRecursive } from "../utils/mergeRecurseive";
-import { NormalizationOutput, ValidKey, ValueOf } from "../types";
-import { identity } from "ramda";
+import { mergeRecursive } from "./utils/mergeRecurseive";
+import { NormalizationOutput, ValidKey, ValueOf } from "./types";
+import { identity } from "./utils/identity";
 
 type NormalizableEntity<IdAttribute extends ValidKey> = {
     [key in IdAttribute]: string | number

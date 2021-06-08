@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable jest/expect-expect */
-import { build, entity } from "./Entity";
+import { build, entity, processedEntity } from "./Entity";
 
 describe('Entity normalization', () => {
   it('normalizes an entity', () => {
@@ -281,9 +281,74 @@ describe('Entity normalization', () => {
     it('can use a custom merging strategy', () => {});
   });
   describe('processStrategy', () => {
-    it('can use a custom processing strategy', () => {});
-    it('can use information from the parent in the process strategy', () => {});
-    it('is run before and passed to the schema normalization', () => {});
+    interface I {
+      id: number
+    }
+    it('can use a custom processing strategy', () => {
+      const processFunction = (i: I) => ({
+          "foo": `${i.id}`
+      });
+      const iBuilder = processedEntity(processFunction)
+        .id('foo')
+        .name('i');
+      const iSchema = build(iBuilder);
+
+      const testInput = {
+        "id": 42
+      };
+
+      expect(iSchema.normalize(testInput)).toEqual({
+        "result": '42',
+        "entities": {
+          "i": {
+            '42': { "foo": '42' }
+          }
+        }
+      });
+    });
+    it('can use information from the parent in the process strategy', () => {
+      const processFunction = (i: I, parent: any, key: string | undefined) => ({
+        "foo": `${i.id}`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        "pid": parent.id ? parent.id as string : null,
+        "pkey": key
+      });
+      const iBuilder = processedEntity(processFunction)
+        .id('foo')
+        .name('i');
+      const iSchema = build(iBuilder);
+
+      interface P {
+        id: string
+        foo: I
+      }
+
+      const pBuilder = entity<P>()
+        .id('id')
+        .name('p')
+        .prop('foo', 'i')
+        .define('i', iSchema);
+      const pSchema = build(pBuilder);
+
+      const testInput = {
+        "id": 'test',
+        "foo": {
+          "id": 42
+        }
+      };
+
+      expect(pSchema.normalize(testInput)).toEqual({
+        "result": 'test',
+        "entities": {
+          'p': {
+            'test': { "id": 'test', "foo": '42'}
+          },
+          'i': {
+            '42': { "foo": '42', "pid": 'test', "pkey": 'foo'}
+          }
+        }
+      });
+    });
   });
 });
 

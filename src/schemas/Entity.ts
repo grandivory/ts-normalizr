@@ -1,5 +1,6 @@
-import { mergeRecursive } from "../mergeRecurseive";
+import { mergeRecursive } from "../utils/mergeRecurseive";
 import { NormalizationOutput, ValidKey, ValueOf } from "../types";
+import { identity } from "ramda";
 
 type NormalizableEntity<IdAttribute extends ValidKey> = {
     [key in IdAttribute]: string | number
@@ -8,17 +9,20 @@ type NormalizableEntity<IdAttribute extends ValidKey> = {
 // This can be extended later as more schema types are added (arrays, objects, multi-value schemas, etc.)
 type ValidSchemaProp<T extends string> = T;
 
-type AnySchema = EntitySchema<any, any, any, any, any>;
+type AnySchema = EntitySchema<any, any, any, any, any, any>;
 
 type ExtractSchemaOutputType<T extends AnySchema> =
-    T extends EntitySchema<any, any, any, any, infer O> ? O : never;
+    T extends EntitySchema<any, any, any, any, any, infer O> ? O : never;
 
 type ExtractPropNames<T extends ValidSchemaProp<string>> = T extends ValidSchemaProp<infer P> ? P : never;
 
 type IdFunction<T> = (input: T, parent: unknown, key: string | undefined) => string;
 
+type ProcessFunction<I, O> = (input: I, parent: any, key: string | undefined) => O;
+
 class EntitySchema<
     Input extends Record<ValidKey, any>,
+    ProcessedType extends Record<ValidKey, any>,
     Name extends string,
     PropsType extends Record<string, ValidSchemaProp<string>>,
     SchemasType extends Record<string, AnySchema>,
@@ -26,10 +30,17 @@ class EntitySchema<
 > {
     nameProp: Name;
     idFunction: IdFunction<Input>;
+    processFunction: ProcessFunction<Input, ProcessedType>;
     props: PropsType;
     schemas: SchemasType;
 
-    constructor(name: Name, idFunction: IdFunction<Input>, props: PropsType, schemas: SchemasType) {
+    constructor(
+        name: Name,
+        idFunction: IdFunction<Input>,
+        props: PropsType,
+        schemas: SchemasType,
+        processFunction: ProcessFunction<Input, ProcessedType>
+    ) {
         this.nameProp = name;
         this.idFunction = idFunction;
         this.props = props;
@@ -37,6 +48,7 @@ class EntitySchema<
             ...schemas,
             [name]: this
         };
+        this.processFunction = processFunction;
     }
 
     normalizeWith(
@@ -44,7 +56,8 @@ class EntitySchema<
         parent: any,
         objectKey: string | undefined
     ): NormalizationOutput<string, EntitiesOutput> {
-        const {"entities": subEntities, processedObject} = Object.entries(input).reduce(
+        const processedInput = this.processFunction(input, parent, objectKey);
+        const {"entities": subEntities, processedObject} = Object.entries(processedInput).reduce(
             ({entities, "processedObject": partialObject}, [key, value]) => {
                 if (key in this.props) {
                     const propType = this.props[key];
@@ -54,7 +67,7 @@ class EntitySchema<
                             keys: Array<string>,
                             entities: Record<string, Record<string, any>>
                         }>(({ keys, "entities": currentEntities}, nextVal) => {
-                            const { result, "entities": keyEntities } = schema.normalizeWith(nextVal, input, key) as ExtractSchemaOutputType<typeof schema>;
+                            const { result, "entities": keyEntities } = schema.normalizeWith(nextVal, processedInput, key) as ExtractSchemaOutputType<typeof schema>;
 
                             return {
                                 "keys": keys.concat([result]),
@@ -77,7 +90,7 @@ class EntitySchema<
                         };
                     }
 
-                    const { result, "entities": keyEntities } = schema.normalizeWith(value, input, key) as ExtractSchemaOutputType<typeof schema>;
+                    const { result, "entities": keyEntities } = schema.normalizeWith(value, processedInput, key) as ExtractSchemaOutputType<typeof schema>;
 
                     // merge the current entities with the results of the normalize
                     return {
@@ -102,7 +115,7 @@ class EntitySchema<
             {"entities": {}, "processedObject": {}
         });
 
-        const thisId = this.idFunction(input, parent, objectKey);
+        const thisId = this.idFunction(processedInput, parent, objectKey);
 
         return {
             "result": thisId,
@@ -120,17 +133,19 @@ class EntitySchema<
 }
 
 class EntityBuilder<
-    InputType,
-    IdType extends IdFunction<InputType> | null,
+    InputType extends Record<ValidKey, any>,
+    ProcessedType extends Record<ValidKey, any>,
+    IdType extends IdFunction<ProcessedType> | null,
     NameProp extends (string extends NameProp ? never : string) | null,
-    PropKeys extends string & keyof InputType,
+    PropKeys extends string & keyof ProcessedType,
     PropValues extends string,
     PropsType extends Record<string, ValidSchemaProp<string>>,
     SchemasType extends Record<string, AnySchema> = Record<never, never>,
-    ThisOutputType = InputType,
+    ThisOutputType = ProcessedType,
     SubEntitiesOutputType extends Record<string, Record<string, any>> = Record<never, never>
 > {
     idFunction: IdType;
+    processFunction: ProcessFunction<InputType, ProcessedType>;
     nameProp: NameProp;
     props: PropsType;
     schemas: SchemasType;
@@ -139,16 +154,19 @@ class EntityBuilder<
         id: IdType,
         name: NameProp,
         props: PropsType,
-        schemas: SchemasType
+        schemas: SchemasType,
+        processFunction: ProcessFunction<InputType, ProcessedType>
     ) {
         this.idFunction = id;
         this.nameProp = name;
         this.props = props;
         this.schemas = schemas;
+        this.processFunction = processFunction;
     }
 
     name<N extends (string extends N ? never : string)>(name: N): EntityBuilder<
         InputType,
+        ProcessedType,
         IdType,
         N,
         PropKeys,
@@ -158,13 +176,14 @@ class EntityBuilder<
         ThisOutputType,
         SubEntitiesOutputType
     > {
-        return new EntityBuilder(this.idFunction, name, this.props, this.schemas);
+        return new EntityBuilder(this.idFunction, name, this.props, this.schemas, this.processFunction);
     }
 
-    id<I extends (ValidKey & keyof InputType)>
-    (idProp: InputType extends NormalizableEntity<I> ? I : never): EntityBuilder<
+    id<I extends (ValidKey & keyof ProcessedType)>
+    (idProp: ProcessedType extends NormalizableEntity<I> ? I : never): EntityBuilder<
         InputType,
-        IdFunction<InputType>,
+        ProcessedType,
+        IdFunction<ProcessedType>,
         NameProp,
         PropKeys,
         PropValues,
@@ -174,16 +193,18 @@ class EntityBuilder<
         SubEntitiesOutputType
     > {
         return new EntityBuilder(
-            (input: InputType) => `${input[idProp] as unknown as string | number}`,
+            (input: ProcessedType) => `${input[idProp] as unknown as string | number}`,
             this.nameProp,
             this.props,
-            this.schemas
+            this.schemas,
+            this.processFunction
         );
     }
 
-    computeId(idFunction: IdFunction<InputType>): EntityBuilder<
+    computeId(idFunction: IdFunction<ProcessedType>): EntityBuilder<
         InputType,
-        IdFunction<InputType>,
+        ProcessedType,
+        IdFunction<ProcessedType>,
         NameProp,
         PropKeys,
         PropValues,
@@ -196,13 +217,15 @@ class EntityBuilder<
             idFunction,
             this.nameProp,
             this.props,
-            this.schemas
+            this.schemas,
+            this.processFunction
         );
     }
 
-    prop<PropName extends string & keyof InputType, PropType extends (string extends PropType ? never : string)>
+    prop<PropName extends string & keyof ProcessedType, PropType extends (string extends PropType ? never : string)>
     (propName: PropName, propType: ValidSchemaProp<PropType>): EntityBuilder<
         InputType,
+        ProcessedType,
         IdType,
         NameProp,
         PropKeys | PropName,
@@ -216,13 +239,15 @@ class EntityBuilder<
             this.idFunction,
             this.nameProp,
             { ...this.props, [propName]: propType },
-            this.schemas
+            this.schemas,
+            this.processFunction
         );
     }
 
     define<EntityName extends PropValues, SchemaType extends AnySchema>(entityName: EntityName, schema: SchemaType):
     EntityBuilder<
         InputType,
+        ProcessedType,
         IdType,
         NameProp,
         PropKeys,
@@ -239,51 +264,54 @@ class EntityBuilder<
             {
                 ...this.schemas,
                 [entityName]: schema
-            }
+            },
+            this.processFunction
         );
     }
 }
 
 type CompleteEntityBuilder<
     InputType extends Record<ValidKey, any>,
-    IdType extends IdFunction<InputType>,
+    ProcessedType extends Record<ValidKey, any>,
+    IdType extends IdFunction<ProcessedType>,
     NameProp extends (string extends NameProp ? never : string),
-    PropKeys extends string & keyof InputType,
+    PropKeys extends string & keyof ProcessedType,
     PropValues extends string,
     PropsType extends Record<string, ValidSchemaProp<string>>,
     SchemasType extends Record<string, AnySchema>,
     ThisOutputType,
     SubEntitiesOutputType extends Record<string, Record<string, any>>
-> = [PropValues] extends [keyof SchemasType | NameProp] ? EntityBuilder<InputType, IdType, NameProp, PropKeys, PropValues, PropsType, SchemasType, ThisOutputType, SubEntitiesOutputType> : never;
+> = [PropValues] extends [keyof SchemasType | NameProp] ? EntityBuilder<InputType, ProcessedType, IdType, NameProp, PropKeys, PropValues, PropsType, SchemasType, ThisOutputType, SubEntitiesOutputType> : never;
 
-export function entity<T>(): EntityBuilder<T, null, null, never, never, Record<never, never>> {
-    return new EntityBuilder<T, null, null, never, never, Record<never, never>>(null, null, {}, {});
+export function entity<T>(): EntityBuilder<T, T, null, null, never, never, Record<never, never>> {
+    return new EntityBuilder(null, null, {}, {}, identity);
+}
+
+export function processedEntity<T, P>(processFunction: ProcessFunction<T, P>):
+EntityBuilder<T, P, null, null, never, never, Record<never, never>> {
+    return new EntityBuilder(null, null, {}, {}, processFunction);
 }
 
 export function build<
     InputType extends Record<ValidKey, any>,
-    IdType extends IdFunction<InputType>,
+    ProcessedType extends Record<ValidKey, any>,
+    IdType extends IdFunction<ProcessedType>,
     NameProp extends (string extends NameProp ? never : string),
-    PropKeys extends string & keyof InputType,
+    PropKeys extends string & keyof ProcessedType,
     PropValues extends (string extends PropValues ? never : string),
     PropsType extends Record<string, ValidSchemaProp<string>>,
     SchemasType extends Record<string, AnySchema>,
     BuilderOutputType,
     SubEntitiesOutputType extends Record<string, Record<string, any>>
 >(
-    builder: CompleteEntityBuilder<InputType, IdType, NameProp, PropKeys, PropValues, PropsType, SchemasType, BuilderOutputType, SubEntitiesOutputType>,
+    builder: CompleteEntityBuilder<InputType, ProcessedType, IdType, NameProp, PropKeys, PropValues, PropsType, SchemasType, BuilderOutputType, SubEntitiesOutputType>,
 ): EntitySchema<
     InputType,
+    ProcessedType,
     NameProp,
     PropsType,
     SchemasType,
     SubEntitiesOutputType & { [k in NameProp]: Record<string, BuilderOutputType> }
 > {
-    return new EntitySchema<
-        InputType,
-        NameProp,
-        PropsType,
-        SchemasType,
-        SubEntitiesOutputType & { [k in NameProp]: Record<string, BuilderOutputType> }
-    >(builder.nameProp, builder.idFunction, builder.props, builder.schemas);
+    return new EntitySchema(builder.nameProp, builder.idFunction, builder.props, builder.schemas, builder.processFunction);
 }

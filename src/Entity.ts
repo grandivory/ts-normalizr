@@ -292,7 +292,7 @@ EntityBuilder<T, P, null, null, never, never, Record<never, never>> {
     return new EntityBuilder(null, null, {}, {}, processFunction);
 }
 
-export function build<
+export function buildSchema<
     InputType extends Record<ValidKey, any>,
     ProcessedType extends Record<ValidKey, any>,
     IdType extends IdFunction<ProcessedType>,

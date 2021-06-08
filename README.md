@@ -73,19 +73,19 @@ interface Article {
 }
 
 // Define a users schema
-const userSchema = build(
+const userSchema = buildSchema(
   entity<User>().id('id').name('users')
 );
 
 // Define your comments schema
-const commentSchema = build(
+const commentSchema = buildSchema(
   entity<Comment>().id('id').name('comments')
     .prop('commenter', 'users')
     .define('users', userSchema)
 );
 
 // Define your article
-const articleSchema = build(
+const articleSchema = buildSchema(
   entity<Article>().id('id').name('articles')
     .prop('author', 'users')
     .prop('comments', 'comments')

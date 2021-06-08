@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable jest/expect-expect */
-import { build, entity, processedEntity } from "./Entity";
+import { buildSchema, entity, processedEntity } from "./Entity";
 
 describe('Entity normalization', () => {
   it('normalizes an entity', () => {
@@ -8,7 +8,7 @@ describe('Entity normalization', () => {
       id: number
     }
     const entityBuilder = entity<Basic>().id('id').name('items');
-    const schema = build(entityBuilder);
+    const schema = buildSchema(entityBuilder);
     expect(schema.normalize({ "id": 1 })).toEqual({
       "result": '1',
       "entities": {
@@ -27,14 +27,14 @@ describe('Entity normalization', () => {
     }
 
     const userBuilder = entity<User>().id('name').name('users');
-    const userSchema = build(userBuilder);
+    const userSchema = buildSchema(userBuilder);
 
     const postBuilder = entity<Post>()
     .id('id')
     .name('posts')
     .prop('author', 'users')
     .define('users', userSchema);
-    const postSchema = build(postBuilder);
+    const postSchema = buildSchema(postBuilder);
 
     const testPost = {
       "id": 1,
@@ -81,7 +81,7 @@ describe('Entity normalization', () => {
     .id('name')
     .name('users')
     .prop('bestFriend', 'users');
-    const userSchema = build(userBuilder);
+    const userSchema = buildSchema(userBuilder);
 
     expect(userSchema.normalize(testUser)).toEqual({
       "result": 'Jack',
@@ -119,14 +119,14 @@ describe('Entity normalization', () => {
     };
 
     const postBuilder = entity<Post>().id('id').name('posts');
-    const postSchema = build(postBuilder);
+    const postSchema = buildSchema(postBuilder);
 
     const userBuilder = entity<User>()
     .id('name')
     .name('users')
     .prop('posts', 'posts')
     .define('posts', postSchema);
-    const userSchema = build(userBuilder);
+    const userSchema = buildSchema(userBuilder);
 
     const result: {
       result: string,
@@ -159,7 +159,7 @@ describe('Entity normalization', () => {
       const testBuilder = entity<Test>()
         .name('tests')
         .computeId((input: Test) => input.foo + input.bar);
-      const testSchema = build(testBuilder);
+      const testSchema = buildSchema(testBuilder);
 
       const test = {
         "foo": 'baz',
@@ -191,7 +191,7 @@ describe('Entity normalization', () => {
             `${parent.id as string}${input.foo}` :
             input.foo
         );
-      const testSchema = build(testBuilder);
+      const testSchema = buildSchema(testBuilder);
 
       const holderBuilder = entity<TestHolder>()
         .name('holders')
@@ -199,7 +199,7 @@ describe('Entity normalization', () => {
         .prop('a', 'tests')
         .prop('b', 'tests')
         .define('tests', testSchema);
-      const holderSchema = build(holderBuilder);
+      const holderSchema = buildSchema(holderBuilder);
 
       const test = {
         "foo": 'baz',
@@ -238,7 +238,7 @@ describe('Entity normalization', () => {
       const testBuilder = entity<Test>()
         .name('tests')
         .computeId((input: Test, _parent: any, key: string | undefined) => key ? key + input.foo : input.foo);
-      const testSchema = build(testBuilder);
+      const testSchema = buildSchema(testBuilder);
 
       const holderBuilder = entity<TestHolder>()
         .name('holders')
@@ -246,7 +246,7 @@ describe('Entity normalization', () => {
         .prop('a', 'tests')
         .prop('b', 'tests')
         .define('tests', testSchema);
-      const holderSchema = build(holderBuilder);
+      const holderSchema = buildSchema(holderBuilder);
 
       const test = {
         "foo": 'baz',
@@ -291,7 +291,7 @@ describe('Entity normalization', () => {
       const iBuilder = processedEntity(processFunction)
         .id('foo')
         .name('i');
-      const iSchema = build(iBuilder);
+      const iSchema = buildSchema(iBuilder);
 
       const testInput = {
         "id": 42
@@ -316,7 +316,7 @@ describe('Entity normalization', () => {
       const iBuilder = processedEntity(processFunction)
         .id('foo')
         .name('i');
-      const iSchema = build(iBuilder);
+      const iSchema = buildSchema(iBuilder);
 
       interface P {
         id: string
@@ -328,7 +328,7 @@ describe('Entity normalization', () => {
         .name('p')
         .prop('foo', 'i')
         .define('i', iSchema);
-      const pSchema = build(pBuilder);
+      const pSchema = buildSchema(pBuilder);
 
       const testInput = {
         "id": 'test',
@@ -392,7 +392,7 @@ describe('Entity Builder', () => {
 
   it('can set a name twice, overriding the original', () => {
     const entityBuilder = entity<Entity>().id('id').name('foo').name('bar');
-    const entitySchema = build(entityBuilder);
+    const entitySchema = buildSchema(entityBuilder);
     expect(entitySchema.nameProp).toBe('bar');
   });
 
@@ -414,7 +414,7 @@ describe('Entity Builder', () => {
 
   it('can build from a complete builder', () => {
     const entityBuilder = entity<Entity>().id('id').name('foo');
-    const schema = build(entityBuilder);
+    const schema = buildSchema(entityBuilder);
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(schema.normalize).toBeDefined();
@@ -426,11 +426,11 @@ describe('Entity Builder', () => {
     const missingSchemas = entity<Entity>().id('id').name('entities').prop('index', 'undefined');
 
     // @ts-expect-error Cannot build from an incomplete builder
-    build(noInfo);
+    buildSchema(noInfo);
     // @ts-expect-error Cannot build from an incomplete builder
-    build(idOnly);
+    buildSchema(idOnly);
     // @ts-expect-error Cannot build from an incomplete builder
-    build(missingSchemas);
+    buildSchema(missingSchemas);
   });
 });
 /* eslint-enable @typescript-eslint/no-empty-function */

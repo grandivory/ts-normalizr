@@ -149,6 +149,32 @@ describe('Entity normalization', () => {
       }
     });
   });
+  it('allows for empty entities', () => {
+    interface User {
+      name: string
+      favoriteFood?: Food
+    }
+
+    interface Food {
+      name: string
+    }
+
+    const testUser = {
+      "name": 'Jack'
+    };
+
+    const foodSchema = buildSchema(
+      entity<Food>().id('name').name('foods')
+    );
+    const userSchema = buildSchema(
+      entity<User>().id('name').name('users')
+        .prop('favoriteFood', 'foods')
+        .define('foods', foodSchema)
+    );
+    const { entities } = userSchema.normalize(testUser);
+
+    expect(entities.foods).toEqual({});
+  });
 
   describe('idAttribute', () => {
     interface Test {

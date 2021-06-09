@@ -57,6 +57,16 @@ class EntitySchema<
         objectKey: string | undefined
     ): NormalizationOutput<string, EntitiesOutput> {
         const processedInput = this.processFunction(input, parent, objectKey);
+
+        // Initialize the entities object to ensure that all entity types are defined, even if empty
+        const baseEntities = Object.keys(this.schemas).reduce(
+            (entities, nextKey) => ({
+                ...entities,
+                [nextKey]: {}
+            }),
+            {}
+        );
+
         const {"entities": subEntities, processedObject} = Object.entries(processedInput).reduce(
             ({entities, "processedObject": partialObject}, [key, value]) => {
                 if (key in this.props) {
@@ -112,7 +122,7 @@ class EntitySchema<
                     }
                 };
             },
-            {"entities": {}, "processedObject": {}
+            {"entities": baseEntities, "processedObject": {}
         });
 
         const thisId = this.idFunction(processedInput, parent, objectKey);

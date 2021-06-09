@@ -1,6 +1,6 @@
 {
   "name": "ts-normalizr",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A typescript-first port of Paul Armstrong's normalizr library for converting nested object structures to a normalized structure.",
   "main": "Entity.ts",
   "repository": "github:grandivory/ts-normalizr",

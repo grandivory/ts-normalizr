@@ -2,16 +2,25 @@
   "name": "ts-normalizr",
   "version": "0.0.3",
   "description": "A typescript-first port of Paul Armstrong's normalizr library for converting nested object structures to a normalized structure.",
-  "main": "Entity.ts",
+  "files": [
+    "lib/**/*"
+  ],
+  "main": "lib/Entity.js",
+  "types": "lib/Entity.d.ts",
   "repository": "github:grandivory/ts-normalizr",
-  "bugs": "https://github.com/grandivory/ts-normalizr/issues",
+  "bugs": {
+    "url": "https://github.com/grandivory/ts-normalizr/issues"
+  },
   "author": "Matthew Butt",
   "license": "MIT",
   "scripts": {
     "lint": "eslint",
-    "tsc": "tsc",
+    "build": "tsc",
     "test": "jest",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "prepublishOnly": "npm run build",
+    "preversion": "npm run lint && npm run test && npm run build",
+    "postversion": "git push && git push --tags"
   },
   "dependencies": {},
   "devDependencies": {

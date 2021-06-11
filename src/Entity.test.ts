@@ -93,7 +93,7 @@ describe('Entity normalization', () => {
       }
     });
   });
-  it('allows for array attributes', () => {
+  it('allows for array and object attributes', () => {
     interface Post {
       id: number
       title: string
@@ -102,6 +102,7 @@ describe('Entity normalization', () => {
     interface User {
       name: string
       posts: Post[]
+      bestPosts: Record<string, Post>
     }
 
     const testUser = {
@@ -115,24 +116,31 @@ describe('Entity normalization', () => {
           "id": 2,
           "title": 'Test Post 2'
         }
-      ]
+      ],
+      "bestPosts": {
+        "stuff": {
+          "id": 3,
+          "title": 'Test Post 3'
+        }
+      }
     };
 
     const postBuilder = entity<Post>().id('id').name('posts');
     const postSchema = buildSchema(postBuilder);
 
     const userBuilder = entity<User>()
-    .id('name')
-    .name('users')
-    .prop('posts', 'posts')
-    .define('posts', postSchema);
+      .id('name')
+      .name('users')
+      .prop('posts', 'posts')
+      .prop('bestPosts', 'posts')
+      .define('posts', postSchema);
     const userSchema = buildSchema(userBuilder);
 
     const result: {
       result: string,
       entities: {
-        users: Record<string, Omit<User, 'posts'>>,
-        posts: Record<string, Post>
+        users: Record<string, Omit<User, 'posts' | 'bestPosts'>>,
+        posts: Record<string, Post>,
       }
     } = userSchema.normalize(testUser);
 
@@ -144,7 +152,8 @@ describe('Entity normalization', () => {
         },
         "posts": {
           "1": {"id": 1, "title": 'Test Post 1'},
-          "2": {"id": 2, "title": 'Test Post 2'}
+          "2": {"id": 2, "title": 'Test Post 2'},
+          "3": {"id": 3, "title": 'Test Post 3'}
         }
       }
     });

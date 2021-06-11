@@ -53,7 +53,7 @@ Consider a typical blog post. The API response for a single post might look some
 We have two nested entity types within our `article`: `users` and `comments`. Using various `schema`, we can normalize all three entity types down:
 
 ```js
-import { entity, build } from 'ts-normalizr';
+import { buildSchema, entity } from 'ts-normalizr';
 
 interface User {
   id: string

@@ -1,7 +1,5 @@
-import { ValidKey } from '../types';
-
-export function mergeRecursive<T extends Record<ValidKey, any>>(a: T, b: T): T {
-  const result: T = Object.assign(Object.create(Object.getPrototypeOf(a)), a) as T;
+export function mergeRecursive(a, b) {
+  const result = Object.assign(Object.create(Object.getPrototypeOf(a)), a);
 
   for (const key in b) {
     if (!result[key]) result[key] = b[key];

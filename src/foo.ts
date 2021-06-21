@@ -1,4 +1,4 @@
-import { mergeRecursive } from "./utils/mergeRecurseive";
+import { mergeRecursive } from "./utils/mergeRecursive";
 import { NormalizationOutput, ValidKey, ValueOf } from "./types";
 import { identity } from "./utils/identity";
 
@@ -77,7 +77,7 @@ class EntitySchema<
             console.log('Array!', input);
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const { "result": arrayIds, "entities": arrayEntities } =
-            schema.normalizeArrayWith(inputValue, processedInput, inputKey);
+            schema.normalizeManyWith(inputValue, processedInput, inputKey);
 
             return {
               // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -131,7 +131,7 @@ class EntitySchema<
     return this.normalizeWith(input, null, undefined);
   }
 
-  normalizeArrayWith(input: Input[] | Record<any, Input>, parent: any, objectKey: string | undefined): NormalizationOutput<string[], EntitiesOutput> {
+  normalizeManyWith(input: Input[] | Record<any, Input>, parent: any, objectKey: string | undefined): NormalizationOutput<string[], EntitiesOutput> {
     const inputs = (() => {
       if (Array.isArray(input)) {
         return input;
@@ -154,8 +154,8 @@ class EntitySchema<
     );
   }
 
-  normalizeArray(input: Input[] | Record<any, Input>) {
-    return this.normalizeArrayWith(input, null, undefined);
+  normalizeMany(input: Input[] | Record<any, Input>) {
+    return this.normalizeManyWith(input, null, undefined);
   }
 }
 
@@ -249,24 +249,42 @@ class EntityBuilder<
     );
   }
 
-  prop<PropName extends string & keyof ProcessedType, PropType extends (string extends PropType ? never : string)>
-  (propName: PropName, propType: ValidSchemaProp<PropType>): EntityBuilder<
+  prop<PropName extends string & keyof ProcessedType, PropType extends (string extends PropType ? never : string), SchemaType extends EntitySchema<any, any, PropType, any, any, any> | never>
+  (propName: PropName, propType: ValidSchemaProp<PropType> | SchemaType): EntityBuilder<
     InputType,
     ProcessedType,
     IdType,
     NameProp,
     PropKeys | PropName,
     PropValues | PropType,
-    PropsType & { [k in PropName]: typeof propType },
-    SchemasType,
+    PropsType & { [k in PropName]: PropType },
+    SchemasType & (typeof propType extends SchemaType ? {
+      [k in PropType]: SchemaType
+    } : never),
     Omit<InputType, PropKeys | PropName>,
     SubEntitiesOutputType
   > {
+
+    const [updatedProps, updatedSchemas] = (() => {
+      if (propType instanceof EntitySchema) {
+        return [
+          { ...this.props, [propName]: propType.nameProp },
+          {
+            ...this.schemas,
+            [propType.nameProp]: propType
+          }
+        ];
+      }
+      return [ { ...this.props, [propName]: propType }, this.schemas];
+    })();
+
     return new EntityBuilder(
       this.idFunction,
       this.nameProp,
-      { ...this.props, [propName]: propType },
-      this.schemas,
+      updatedProps as (PropsType & { [k in PropName]: PropType }),
+      updatedSchemas as (SchemasType & (typeof propType extends SchemaType ? {
+        [k in PropType]: SchemaType
+      } : never)),
       this.processFunction
     );
   }

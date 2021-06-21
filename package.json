@@ -5,8 +5,8 @@
   "files": [
     "lib/**/*"
   ],
-  "main": "lib/Entity.js",
-  "types": "lib/Entity.d.ts",
+  "main": "lib/ts-normalizr.js",
+  "types": "lib/ts-normalizr.d.ts",
   "repository": "github:grandivory/ts-normalizr",
   "bugs": {
     "url": "https://github.com/grandivory/ts-normalizr/issues"
@@ -14,8 +14,11 @@
   "author": "Matthew Butt",
   "license": "MIT",
   "scripts": {
+    "build": "npm run clean && tsc && run-p build:*",
+    "build:development": "cross-env NODE_ENV=development rollup -c",
+    "build:production": "cross-env NODE_ENV=production rollup -c",
+    "clean": "rm -rf lib",
     "lint": "eslint",
-    "build": "tsc",
     "test": "jest",
     "prepare": "husky install",
     "prepublishOnly": "npm run build",
@@ -24,22 +27,27 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@babel/core": "^7.14.3",
+    "@babel/core": "^7.14.6",
+    "@babel/eslint-parser": "^7.14.5",
     "@babel/preset-env": "^7.14.2",
     "@babel/preset-typescript": "^7.13.0",
+    "@rollup/plugin-babel": "^5.3.0",
     "@types/babel__core": "^7.1.14",
     "@types/jest": "^26.0.23",
     "@types/ramda": "^0.27.40",
     "@typescript-eslint/eslint-plugin": "^4.24.0",
     "@typescript-eslint/parser": "^4.24.0",
     "babel-jest": "^26.6.3",
+    "cross-env": "^7.0.3",
     "eslint": "^7.27.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-import": "^2.23.3",
     "eslint-plugin-jest": "^24.3.6",
     "husky": "^6.0.0",
     "jest": "^26.6.3",
-    "rollup": "^2.49.0",
+    "npm-run-all": "^4.1.5",
+    "rollup": "^2.52.2",
+    "rollup-plugin-dts": "^3.0.2",
     "typescript": "^4.3.2"
   }
 }

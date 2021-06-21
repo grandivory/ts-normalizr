@@ -9,6 +9,7 @@
     "isolatedModules": true,
     "module": "commonjs",
     "moduleResolution": "node",
+    "noEmit": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "outDir": "./lib",

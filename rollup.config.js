@@ -1,5 +1,6 @@
 import babel from "@rollup/plugin-babel";
-import dts from "rollup-plugin-dts";
+import typescript from "rollup-plugin-typescript2";
+import copy from "rollup-plugin-copy";
 import { name } from "./package.json";
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -17,11 +18,20 @@ export default [
       { file: `${destBase}.amd${destExtension}`, format: 'amd', name },
       { file: `${destBase}.browser${destExtension}`, format: 'iife', name: 'tsnormalizr' },
     ],
-    plugins: [babel({ babelHelpers: 'bundled' })]
-  },
-  {
-    input: 'src/index.d.ts',
-    output: [{ file: 'lib/ts-normalizr.d.ts', format: 'es' }],
-    plugins: [dts()],
-  },
+    plugins: [
+      babel({ babelHelpers: 'bundled' }),
+      typescript({
+        tsconfigOverride: {
+          exclude: ['index.d.ts', '**/*.test.ts']
+        }
+      }),
+      copy({
+        targets: [{
+          src: 'src/index.d.ts',
+          dest: 'lib/',
+          rename: 'ts-normalizr.d.ts'
+        }]
+      })
+    ]
+  }
 ];

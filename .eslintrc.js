@@ -115,6 +115,7 @@ module.exports = {
         '@typescript-eslint/no-duplicate-imports': 'error',
         'no-extra-parens': 'off',
         '@typescript-eslint/no-extra-parens': 'error',
+        '@typescript-eslint/no-empty-interface': ['error', { 'allowSingleExtends': true }],
         'no-extra-semi': 'off',
         '@typescript-eslint/no-extra-semi': 'error',
         'no-implied-eval': 'off',

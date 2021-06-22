@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable jest/expect-expect */
-import { buildSchema, entity } from "./";
+import { arrayValues, buildSchema, entity, objectValues } from ".";
 
 describe('Entity normalization', () => {
   it('normalizes an entity', () => {
@@ -17,54 +17,6 @@ describe('Entity normalization', () => {
     });
   });
   it('allows for other entities to be added', () => {
-    interface User {
-      name: string
-    }
-    interface Post {
-      id: number
-      title: string
-      author: User
-    }
-
-    const userBuilder = entity<User>().id('name').name('users');
-    const userSchema = buildSchema(userBuilder);
-
-    const postBuilder = entity<Post>()
-    .id('id')
-    .name('posts')
-    .prop('author', 'users')
-    .define(userSchema);
-    const postSchema = buildSchema(postBuilder);
-
-    const testPost = {
-      "id": 1,
-      "title": 'Test Post',
-      "author": {
-        "name": 'Jack'
-      }
-    };
-
-    const output: {
-      result: string,
-      entities: {
-        posts: Record<string, Omit<Post, 'author'>>,
-        users: Record<string, User>
-      }
-    } = postSchema.normalize(testPost);
-
-    expect(output).toEqual({
-      "result": '1',
-      "entities": {
-        "posts": {
-          "1": { "id": 1, "title": 'Test Post', "author": 'Jack'}
-        },
-        'users': {
-          'Jack': { "name": 'Jack' }
-        }
-      }
-    });
-  });
-  it('allows schemas to be added directly as props', () => {
     interface User {
       name: string
     }
@@ -140,7 +92,7 @@ describe('Entity normalization', () => {
       }
     });
   });
-  it.skip('allows for array and object attributes', () => {
+  it('allows for array and object attributes', () => {
     interface Post {
       id: number
       title: string
@@ -175,12 +127,12 @@ describe('Entity normalization', () => {
     const postBuilder = entity<Post>().id('id').name('posts');
     const postSchema = buildSchema(postBuilder);
 
+
     const userBuilder = entity<User>()
       .id('name')
       .name('users')
-      .prop('posts', 'posts')
-      .prop('bestPosts', 'posts')
-      .define(postSchema);
+      .prop('posts', arrayValues(postSchema))
+      .prop('bestPosts', objectValues(postSchema));
     const userSchema = buildSchema(userBuilder);
 
     const result: {
@@ -195,7 +147,7 @@ describe('Entity normalization', () => {
       "result": 'Jack',
       "entities": {
         "users": {
-          'Jack': {"name": 'Jack', "posts": ['1', '2']},
+          'Jack': {"name": 'Jack', "posts": ['1', '2'], "bestPosts": { "stuff": '3' } },
         },
         "posts": {
           "1": {"id": 1, "title": 'Test Post 1'},
@@ -408,8 +360,7 @@ describe('Entity normalization', () => {
       const pBuilder = entity<P>()
         .id('id')
         .name('p')
-        .prop('foo', 'i')
-        .define(iSchema);
+        .prop('foo', iSchema);
       const pSchema = buildSchema(pBuilder);
 
       const testInput = {

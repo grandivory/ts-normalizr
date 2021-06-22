@@ -1,12 +1,12 @@
-import { mergeRecursive } from "./utils/mergeRecursive";
+import { PropBuilder } from "../types.ts";
+import { mergeRecursive } from "../utils/mergeRecursive";
 
 /**
  * @class EntitySchema
  * @property {string} nameProp The name that will be used for normalized entities of this type
  * @property {Function} idFunction A function used to get the ID value for a single entity
  * @property {Function} processFunction A function used to convert the input type before normalizing
- * @property {Object<string, string>} props A map of properties of the entity type to the names of other schemas
- * @property {Object<string, EntitySchema>} schemas A map of the names of other schemas to their schema classes
+ * @property {Object<string, Schema>} props A map of properties of the entity type to the names of other schemas
  */
 export class EntitySchema {
   /**
@@ -25,28 +25,45 @@ export class EntitySchema {
    * @type {Object<string, string>}
    */
   props;
-  /**
-   * @type {Object<string, EntitySchema>}
-   */
-  schemas;
 
   constructor(name, idFunction, props, schemas, processFunction) {
     this.nameProp = name;
     this.idFunction = idFunction;
-    this.props = props;
-    this.schemas = {
+    this.processFunction = processFunction;
+
+    const allSchemas = {
       ...schemas,
       [name]: this
     };
-    this.processFunction = processFunction;
+
+    // Convert the props into valid schemas
+    const schemaProps = Object.entries(props).reduce(
+      (propsObject, [nextKey, nextValue]) => {
+
+        if (typeof nextValue === 'string') {
+          return {
+            ...propsObject,
+            [nextKey]: allSchemas[nextValue]
+          };
+        }
+
+        return {
+          ...propsObject,
+          [nextKey]: nextValue.build(allSchemas)
+        };
+      },
+      {}
+    );
+
+    this.props = schemaProps;
   }
 
   normalizeWith(input, parent, objectKey) {
     // Initialize the entities object to ensure that all entity types are defined, even if empty
-    const baseEntities = Object.keys(this.schemas).reduce(
-      (entities, nextKey) => ({
+    const baseEntities = Object.values(this.props).reduce(
+      (entities, nextSchema) => ({
         ...entities,
-        [nextKey]: {}
+        [nextSchema.nameProp]: {}
       }),
       {}
     );
@@ -57,25 +74,17 @@ export class EntitySchema {
     const { "entities": subEntities, processedObject } = Object.entries(processedInput).reduce(
       ({ entities, "processedObject": partialObject }, [inputKey, inputValue]) => {
         if (inputKey in this.props) {
-          const propType = this.props[inputKey];
-          const schema = this.schemas[propType];
+          const schema = this.props[inputKey];
 
-          let idResult, propEntities;
-
-          if (Array.isArray(inputValue)) {
-            ({ "result": idResult, "entities": propEntities } =
-              schema.normalizeManyWith(inputValue, processedInput, inputKey));
-          } else {
-            ({ "result": idResult, "entities": propEntities } =
-              schema.normalizeWith(inputValue, processedInput, inputKey));
-          }
+          const { "result": propResult, "entities": propEntities } =
+            schema.normalizeWith(inputValue, processedInput, inputKey);
 
           // merge the current entities with the results of the normalize
           return {
             "entities": mergeRecursive(entities, propEntities),
             "processedObject": {
               ...partialObject,
-              [inputKey]: idResult
+              [inputKey]: propResult
             }
           };
         }
@@ -202,9 +211,26 @@ export class EntityBuilder {
             [propValue.nameProp]: propValue
           }
         ];
+      } else if (propValue instanceof PropBuilder) {
+        if (propValue.schema) {
+          return [
+            // Remove the schema from the PropBuilder, and use just the name...
+            { ...this.props, [propName]: propValue.basePropBuilder() },
+            // ...then put the schema back into the schemas object
+            { ...this.schemas, [propValue.schemaName]: propValue.schema }
+          ];
+        }
+
+        return [
+          { ...this.props, [propName]: propValue },
+          this.schemas
+        ];
       }
 
-      return [{ ...this.props, [propName]: propValue }, this.schemas];
+      return [
+        { ...this.props, [propName]: propValue },
+        this.schemas
+      ];
     })();
 
     return new EntityBuilder(

@@ -1,5 +1,7 @@
-import { EntitySchema, EntityBuilder } from "./Entity";
+import { EntitySchema, EntityBuilder } from "./schemas/Entity";
+import { ArrayValuesBuilder, ArrayValuesSchemaBuilder } from "./schemas/ArrayValues";
 import { identity } from "./utils/identity";
+import { ObjectValuesBuilder, ObjectValuesSchemaBuilder } from "./schemas/ObjectValues";
 
 export function entity(processFunction) {
   if (!processFunction) {
@@ -7,6 +9,22 @@ export function entity(processFunction) {
   }
 
   return new EntityBuilder(null, null, {}, {}, processFunction);
+}
+
+export function arrayValues(schemaType) {
+  if (typeof schemaType === 'string') {
+    return new ArrayValuesBuilder(schemaType);
+  }
+
+  return new ArrayValuesSchemaBuilder(schemaType);
+}
+
+export function objectValues(schemaType) {
+  if (typeof schemaType === 'string') {
+    return new ObjectValuesBuilder(schemaType);
+  }
+
+  return new ObjectValuesSchemaBuilder(schemaType);
 }
 
 export function buildSchema(builder) {

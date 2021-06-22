@@ -80,17 +80,14 @@ const userSchema = buildSchema(
 // Define your comments schema
 const commentSchema = buildSchema(
   entity<Comment>().id('id').name('comments')
-    .prop('commenter', 'users')
-    .define('users', userSchema)
+    .prop('commenter', userSchema)
 );
 
 // Define your article
 const articleSchema = buildSchema(
   entity<Article>().id('id').name('articles')
-    .prop('author', 'users')
-    .prop('comments', 'comments')
-    .define('users', userSchema)
-    .define('comments', commentsSchema)
+    .prop('author', userSchema)
+    .prop('comments', commentsSchema)
 );
 
 const normalizedData = articleSchema.normalize(originalData);

@@ -16,9 +16,9 @@ export class ObjectValuesSchema<
 }
 
 export class ObjectValuesBuilder<T extends string>
-  extends PropBuilder<T> {}
+  extends PropBuilder<T, Record<string, NormalizationResultType>> {}
 
-export class ObjectValuesSchemaBuilder<T extends string, S extends EntitySchema<any, any, T, any, any>> extends ObjectValuesBuilder<T> implements SchemaPropBuilder<T, S> {
+export class ObjectValuesSchemaBuilder<T extends string, S extends EntitySchema<any, any, T, any, any>> extends ObjectValuesBuilder<T> implements SchemaPropBuilder<T, Record<string, NormalizationResultType>, S> {
   schema: S;
 
   constructor(input: S)

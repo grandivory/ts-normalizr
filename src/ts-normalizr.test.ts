@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable jest/expect-expect */
 import { arrayValues, buildSchema, entity, objectValues } from ".";
+import { NormalizationResultType } from "./types";
 
 describe('Entity normalization', () => {
   it('normalizes an entity', () => {
@@ -46,7 +47,7 @@ describe('Entity normalization', () => {
     const output: {
       result: string,
       entities: {
-        posts: Record<string, Omit<Post, 'author'>>,
+        posts: Record<string, Omit<Post, 'author'> & { author: string }>,
         users: Record<string, User>
       }
     } = postSchema.normalize(testPost);
@@ -137,7 +138,7 @@ describe('Entity normalization', () => {
     const result: {
       result: string,
       entities: {
-        users: Record<string, Omit<User, 'posts' | 'bestPosts'>>,
+        users: Record<string, Omit<User, 'posts' | 'bestPosts'> & { posts: string[], bestPosts: Record<string, NormalizationResultType>}>,
         posts: Record<string, Post>,
       }
     } = userSchema.normalize(testUser);

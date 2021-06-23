@@ -1,5 +1,5 @@
 import { IdFunction, ProcessFunction } from "..";
-import { AnySchema, ExtractSchemaNames, ExtractSchemaPropOutputType, NormalizationOutput, PropBuilder, Schema, SchemaPropBuilder, ValidKey, ValidSchemaProp, ValueOf } from "../types";
+import { AnySchema, ExtractPropBuilderResultType, ExtractSchemaNames, ExtractSchemaPropOutputType, ExtractSchemaPropResultType, ExtractSchemaResultType, NormalizationOutput, PropBuilder, Schema, SchemaPropBuilder, ValidKey, ValidSchemaProp, ValueOf } from "../types";
 
 type NormalizableEntity<IdAttribute extends ValidKey> = {
   [key in IdAttribute]: string | number
@@ -108,7 +108,7 @@ declare class EntityBuilder<
   >
 
   prop<PropName extends string & keyof ProcessedType, PropType extends (string extends PropType ? never : string)>
-  (propName: PropName, propType: ValidSchemaProp<PropType>): EntityBuilder<
+  (propName: PropName, propType: PropType): EntityBuilder<
     InputType,
     ProcessedType,
     IdType,
@@ -117,7 +117,7 @@ declare class EntityBuilder<
     PropValues | PropType,
     PropsType & { [k in PropName]: PropType },
     SchemasType,
-    Omit<InputType, PropKeys | PropName>,
+    Omit<ThisOutputType, PropName> & { [k in PropName]: string},
     SubEntitiesOutputType
   >
 
@@ -133,11 +133,11 @@ declare class EntityBuilder<
     SchemasType & {
       [k in ExtractSchemaNames<SchemaType>]: SchemaType
     },
-    Omit<InputType, PropKeys | PropName>,
+    Omit<ThisOutputType, PropName> & { [k in PropName]: ExtractSchemaResultType<SchemaType> },
     SubEntitiesOutputType & ExtractSchemaOutputType<SchemaType>
   >
 
-  prop<PropName extends string & keyof ProcessedType, SchemaName extends string, SchemaType extends EntitySchema<any, any, SchemaName, any, any>, PropType extends SchemaPropBuilder<SchemaName, SchemaType>>
+  prop<PropName extends string & keyof ProcessedType, SchemaName extends string, SchemaType extends EntitySchema<any, any, SchemaName, any, any>, PropType extends SchemaPropBuilder<SchemaName, any, SchemaType>>
   (propName: PropName, propType: PropType): EntityBuilder<
     InputType,
     ProcessedType,
@@ -145,13 +145,13 @@ declare class EntityBuilder<
     NameProp,
     PropKeys | PropName,
     PropValues | SchemaName,
-    PropsType & { [k in PropName]: PropBuilder<SchemaName> },
+    PropsType & { [k in PropName]: PropBuilder<SchemaName, any> },
     SchemasType & { [k in SchemaName]: SchemaType },
-    Omit<InputType, PropKeys | PropName>,
+    Omit<ThisOutputType, PropName> & { [k in PropName]: ExtractSchemaPropResultType<PropType> },
     SubEntitiesOutputType & ExtractSchemaPropOutputType<PropType>
   >
 
-  prop<PropName extends string & keyof ProcessedType, SchemaName extends string, PropType extends PropBuilder<SchemaName>>
+  prop<PropName extends string & keyof ProcessedType, SchemaName extends string, PropType extends PropBuilder<SchemaName, any>>
   (propName: PropName, propType: PropType): EntityBuilder<
     InputType,
     ProcessedType,
@@ -161,7 +161,7 @@ declare class EntityBuilder<
     PropValues | SchemaName,
     PropsType & { [k in PropName]: SchemaName },
     SchemasType,
-    Omit<InputType, PropKeys | PropName>,
+    Omit<ThisOutputType, PropName> & { [k in PropName]: ExtractPropBuilderResultType<PropType> },
     SubEntitiesOutputType
   >
 

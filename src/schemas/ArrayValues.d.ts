@@ -16,9 +16,9 @@ export class ArrayValuesSchema<
 }
 
 export class ArrayValuesBuilder<T extends string>
-  extends PropBuilder<T> {}
+  extends PropBuilder<T, string[]> {}
 
-export class ArrayValuesSchemaBuilder<T extends string, S extends EntitySchema<any, any, T, any, any>> extends ArrayValuesBuilder<T> implements SchemaPropBuilder<T, S> {
+export class ArrayValuesSchemaBuilder<T extends string, S extends EntitySchema<any, any, T, any, any>> extends ArrayValuesBuilder<T> implements SchemaPropBuilder<T, string[], S> {
   schema: S;
 
   constructor(input: S)

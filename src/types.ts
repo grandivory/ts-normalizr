@@ -1,4 +1,4 @@
-import { EntitySchema } from "./schemas/Entity";
+import { EntitySchema, ExtractSchemaOutputType } from "./schemas/Entity";
 
 export type NormalizationResultType = string | string[] | NormalizationResultObject;
 
@@ -27,7 +27,10 @@ export interface Schema<
     objectKey: string | undefined
   ): NormalizationOutput<ResultType, EntitiesOutput>
 }
-export class PropBuilder<SchemaName extends string> {
+
+export type ExtractSchemaResultType<T extends AnySchema> = T extends Schema<any, any, infer R, any> ? R : never;
+
+export class PropBuilder<SchemaName extends string, ResultType extends NormalizationResultType> {
   schemaName: SchemaName;
 
   constructor(input: SchemaName) {
@@ -40,26 +43,33 @@ export class PropBuilder<SchemaName extends string> {
     EntitiesOutput extends Record<string, Record<string, any>>,
     S extends EntitySchema<InputType, any, SchemaName, any, EntitiesOutput>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  >(schemas: Record<SchemaName, S>): Schema<InputType, SchemaName, any, EntitiesOutput> {
+  >(schemas: Record<SchemaName, S>): Schema<InputType, SchemaName, ResultType, EntitiesOutput> {
     throw new Error("Method not implemented.");
   }
 }
 
+export type ExtractPropBuilderResultType<T extends PropBuilder<any, any>> =
+  T extends PropBuilder<any, infer R> ? R : never;
+
 export interface SchemaPropBuilder<
   SchemaName extends string,
+  ResultType extends NormalizationResultType,
   SchemaType extends EntitySchema<any, any, SchemaName, any, any>
-> extends PropBuilder<SchemaName> {
+> extends PropBuilder<SchemaName, ResultType> {
   schema: SchemaType;
 
-  basePropBuilder(): PropBuilder<SchemaName>
+  basePropBuilder(): PropBuilder<SchemaName, ResultType>
 }
 
-export type ExtractSchemaPropOutputType<T> = T extends SchemaPropBuilder<any, infer S> ?
-  S extends Schema<any, any, any, infer O> ? O : never :
+export type ExtractSchemaPropResultType<T extends SchemaPropBuilder<any, any, any>> =
+  T extends SchemaPropBuilder<any, infer R, any> ? R : never;
+
+export type ExtractSchemaPropOutputType<T extends SchemaPropBuilder<any, any, any>> =
+  T extends SchemaPropBuilder<any, any, infer S> ?
+  ExtractSchemaOutputType<S> :
   never;
 
-// This can be extended later as more schema types are added (arrays, objects, multi-value schemas, etc.)
-export type ValidSchemaProp<T extends string> = T | PropBuilder<T> | SchemaPropBuilder<T, any>;
+export type ValidSchemaProp<T extends string> = T | PropBuilder<T, any> | SchemaPropBuilder<T, any, any>;
 
 export type ExtractSchemaNames<T extends AnySchema> = T extends Schema<any, infer N, any, any> ? N : never;
 

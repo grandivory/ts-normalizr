@@ -1,6 +1,6 @@
 {
   "name": "ts-normalizr",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A typescript-first port of Paul Armstrong's normalizr library for converting nested object structures to a normalized structure.",
   "files": [
     "lib/**/*"

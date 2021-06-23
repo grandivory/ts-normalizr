@@ -26,11 +26,21 @@ export default [
         }
       }),
       copy({
-        targets: [{
-          src: 'src/index.d.ts',
-          dest: 'lib/',
-          rename: 'ts-normalizr.d.ts'
-        }]
+        targets: [
+          {
+            src: 'src/index.d.ts',
+            dest: 'lib/',
+            rename: 'ts-normalizr.d.ts'
+          },
+          {
+            src: 'src/schemas/*.d.ts',
+            dest: 'lib/schemas'
+          },
+          {
+            src: 'src/utils/*.d.ts',
+            dest: 'lib/utils'
+          }
+        ]
       })
     ]
   }

@@ -1,29 +1,10 @@
 import { PropBuilder } from "../types.ts";
 import { mergeRecursive } from "../utils/mergeRecursive";
 
-/**
- * @class EntitySchema
- * @property {string} nameProp The name that will be used for normalized entities of this type
- * @property {Function} idFunction A function used to get the ID value for a single entity
- * @property {Function} processFunction A function used to convert the input type before normalizing
- * @property {Object<string, Schema>} props A map of properties of the entity type to the names of other schemas
- */
 export class EntitySchema {
-  /**
-   * @type {string}
-   */
   nameProp;
-  /**
-   * @type {Function}
-   */
   idFunction;
-  /**
-   * @type {Function}
-   */
   processFunction;
-  /**
-   * @type {Object<string, string>}
-   */
   props;
 
   constructor(name, idFunction, props, schemas, processFunction) {
@@ -149,34 +130,11 @@ export class EntitySchema {
   }
 }
 
-/**
- * @class EntityBuilder
- * @property {Function} idFunction A function used to get the ID value for a single entity
- * @property {Function} processFunction A function used to convert the input type before normalizing
- * @property {string} nameProp The name that will be used for normalized entities of this type
- * @property {Object<string, string>} props A map of properties of the entity type to the names of other schemas
- * @property {Object<string, EntitySchema>} schemas A map of the names of other schemas to their schema classes
- */
 export class EntityBuilder {
-  /**
-   * @type {string}
-   */
   nameProp;
-  /**
-   * @type {Function}
-   */
   idFunction;
-  /**
-   * @type {Function}
-   */
   processFunction;
-  /**
-   * @type {Object<string, string>}
-   */
   props;
-  /**
-   * @type {Object<string, EntitySchema>}
-   */
   schemas;
 
   constructor(id, name, props, schemas, processFunction) {

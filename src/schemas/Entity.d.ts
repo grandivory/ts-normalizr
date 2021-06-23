@@ -1,5 +1,5 @@
 import { IdFunction, ProcessFunction } from "..";
-import { AnySchema, ExtractSchemaNames, NormalizationOutput, PropBuilder, Schema, SchemaPropBuilder, ValidKey, ValidSchemaProp, ValueOf } from "../types";
+import { AnySchema, ExtractSchemaNames, ExtractSchemaPropOutputType, NormalizationOutput, PropBuilder, Schema, SchemaPropBuilder, ValidKey, ValidSchemaProp, ValueOf } from "../types";
 
 type NormalizableEntity<IdAttribute extends ValidKey> = {
   [key in IdAttribute]: string | number
@@ -14,7 +14,7 @@ declare class EntitySchema<
   Name extends string,
   PropsType extends Record<string, AnySchema>,
   EntitiesOutput extends Record<ExtractSchemaNames<ValueOf<PropsType>> | Name, Record<string, any>>
-> implements Schema<Input, Name, string,  EntitiesOutput> {
+> implements Schema<Input, Name, string, EntitiesOutput> {
   nameProp: Name;
   idFunction: IdFunction<Input>;
   processFunction: ProcessFunction<Input, ProcessedType>;
@@ -148,7 +148,7 @@ declare class EntityBuilder<
     PropsType & { [k in PropName]: PropBuilder<SchemaName> },
     SchemasType & { [k in SchemaName]: SchemaType },
     Omit<InputType, PropKeys | PropName>,
-    SubEntitiesOutputType & ExtractSchemaOutputType<SchemaType>
+    SubEntitiesOutputType & ExtractSchemaPropOutputType<PropType>
   >
 
   prop<PropName extends string & keyof ProcessedType, SchemaName extends string, PropType extends PropBuilder<SchemaName>>

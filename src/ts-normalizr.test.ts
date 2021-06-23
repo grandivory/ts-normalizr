@@ -127,12 +127,11 @@ describe('Entity normalization', () => {
     const postBuilder = entity<Post>().id('id').name('posts');
     const postSchema = buildSchema(postBuilder);
 
-
     const userBuilder = entity<User>()
       .id('name')
       .name('users')
       .prop('posts', arrayValues(postSchema))
-      .prop('bestPosts', objectValues(postSchema));
+      .prop('bestPosts', objectValues('posts'));
     const userSchema = buildSchema(userBuilder);
 
     const result: {

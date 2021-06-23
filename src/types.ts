@@ -54,6 +54,10 @@ export interface SchemaPropBuilder<
   basePropBuilder(): PropBuilder<SchemaName>
 }
 
+export type ExtractSchemaPropOutputType<T> = T extends SchemaPropBuilder<any, infer S> ?
+  S extends Schema<any, any, any, infer O> ? O : never :
+  never;
+
 // This can be extended later as more schema types are added (arrays, objects, multi-value schemas, etc.)
 export type ValidSchemaProp<T extends string> = T | PropBuilder<T> | SchemaPropBuilder<T, any>;
 

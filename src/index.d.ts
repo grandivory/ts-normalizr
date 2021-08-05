@@ -5,7 +5,7 @@ import { AnySchema, ValidKey, ValidSchemaProp } from "./types";
 
 type IdFunction<T> = (input: T, parent: unknown, key: string | undefined) => string;
 
-type ProcessFunction<I, O> = (input: I, parent: any, key: string | undefined) => O;
+type ProcessFunction<I, O> = (input: I, parent: unknown, key: string | undefined) => O;
 
 type CompleteEntityBuilder<
   InputType extends Record<ValidKey, any>,
@@ -27,10 +27,10 @@ export function entity<T, P>(processFunction: ProcessFunction<T, P>):
   EntityBuilder<T, P, null, null, never, never, Record<never, never>>;
 
 export function arrayValues<T extends string>(input: T): ArrayValuesBuilder<T>;
-export function arrayValues<T extends string, S extends EntitySchema<any, any, T, any, any>>(input: S): ArrayValuesSchemaBuilder<T, S>;
+export function arrayValues<T extends string, S extends EntitySchema<any, any, T, any, any>>(input: S & EntitySchema<any, any, T, any, any>): ArrayValuesSchemaBuilder<T, S>;
 
 export function objectValues<T extends string>(input: T): ObjectValuesBuilder<T>;
-export function objectValues<T extends string, S extends EntitySchema<any, any, T, any, any>>(input: S): ObjectValuesSchemaBuilder<T, S>;
+export function objectValues<T extends string, S extends EntitySchema<any, any, T, any, any>>(input: S & EntitySchema<any, any, T, any, any>): ObjectValuesSchemaBuilder<T, S>;
 
 export function buildSchema<
   InputType extends Record<ValidKey, any>,

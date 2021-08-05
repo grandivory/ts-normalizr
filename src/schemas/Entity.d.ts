@@ -138,7 +138,7 @@ declare class EntityBuilder<
   >
 
   prop<PropName extends string & keyof ProcessedType, SchemaName extends string, SchemaType extends EntitySchema<any, any, SchemaName, any, any>, PropType extends SchemaPropBuilder<SchemaName, any, SchemaType>>
-  (propName: PropName, propType: PropType): EntityBuilder<
+  (propName: PropName, propType: PropType & SchemaPropBuilder<SchemaName, any, SchemaType>): EntityBuilder<
     InputType,
     ProcessedType,
     IdType,
@@ -152,7 +152,7 @@ declare class EntityBuilder<
   >
 
   prop<PropName extends string & keyof ProcessedType, SchemaName extends string, PropType extends PropBuilder<SchemaName, any>>
-  (propName: PropName, propType: PropType): EntityBuilder<
+  (propName: PropName, propType: PropType & PropBuilder<SchemaName, any>): EntityBuilder<
     InputType,
     ProcessedType,
     IdType,
@@ -166,7 +166,7 @@ declare class EntityBuilder<
   >
 
   define<EntityName extends PropValues, SchemaType extends EntitySchema<any, any, EntityName, any, any>>
-  (schema: SchemaType):
+  (schema: SchemaType & EntitySchema<any, any, EntityName, any, any>):
   EntityBuilder<
     InputType,
     ProcessedType,

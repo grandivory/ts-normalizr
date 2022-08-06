@@ -83,13 +83,11 @@ const commentSchema = buildSchema(
     .prop('commenter', userSchema)
 );
 
-const commentsSchema = arrayValues(commentSchema);
-
 // Define your article
 const articleSchema = buildSchema(
   entity<Article>().id('id').name('articles')
     .prop('author', userSchema)
-    .prop('comments', commentsSchema)
+    .prop('comments', arrayValues(commentSchema))
 );
 
 const normalizedData = articleSchema.normalize(originalData);
